@@ -1,0 +1,16 @@
+{
+  "include": ["src/**/*", "prisma/**/*"],
+  "compilerOptions": {
+    "outDir": "./dist",
+    "module": "commonjs",
+    "target": "es2016",
+    "types": ["node"],
+    "lib": ["es2016"],
+    "strict": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "moduleResolution": "node"
+  }
+}
