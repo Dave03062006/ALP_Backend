@@ -5,10 +5,229 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client"
+  provider = "prisma-client-js"
   output   = "../generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+// User/Profile Table
+model Profile {
+  id              Int       @id @default(autoincrement())
+  username        String    @unique
+  email           String?   @unique
+  password        String
+  displayName     String?
+  bio             String?
+  profilePictureId Int?
+  points          Int       @default(0)
+  totalSpent      Float     @default(0)
+  achievementCount Int      @default(0) // Counter for milestone tracking
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  profilePicture  Item?     @relation("ProfilePicture", fields: [profilePictureId], references: [id])
+  transactions    Transaction[]
+  inventory       ProfileItem[]
+  gachaHistory    GachaHistory[]
+  voucherPurchases VoucherPurchase[]
+
+  @@index([username])
+  @@index([email])
+}
+
+// Games Table
+model Game {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  iconUrl     String?
+  isActive    Boolean  @default(true)
+
+  // Relations
+  transactions    Transaction[]
+  events          Event[]
+  currencyRates   CurrencyRate[]
+  gachaPool       GachaPool?
+  vouchers        Voucher[]
+
+  @@index([name])
+}
+
+// Transaction Table
+model Transaction {
+  id              Int      @id @default(autoincrement())
+  profileId       Int
+  gameId          Int
+  eventId         Int?
+  transactionTypeId Int
+  amount          Float
+  pointsEarned    Int      @default(0)
+  purchaseDate    DateTime @default(now())
+
+  // Relations
+  profile         Profile          @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  game            Game             @relation(fields: [gameId], references: [id])
+  event           Event?           @relation(fields: [eventId], references: [id])
+  transactionType TransactionType  @relation(fields: [transactionTypeId], references: [id])
+
+  @@index([profileId])
+  @@index([gameId])
+  @@index([purchaseDate])
+}
+
+// Transaction Types (Discount, Bundle, Single Purchase)
+model TransactionType {
+  id               Int      @id @default(autoincrement())
+  typeName         String   @unique // "Discount", "Bundle", "Single"
+  pointsMultiplier Float    @default(1.0)
+
+  // Relations
+  transactions Transaction[]
+}
+
+// Events in Games
+model Event {
+  id          Int      @id @default(autoincrement())
+  gameId      Int
+  eventName   String
+  isActive    Boolean  @default(true)
+
+  // Relations
+  game         Game          @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+
+  @@index([gameId])
+  @@index([eventName])
+}
+
+// Currency Conversion Rates
+model CurrencyRate {
+  id              Int      @id @default(autoincrement())
+  gameId          Int
+  currencyName    String   // e.g., "Genesis Crystals", "Primogems"
+  toIDR           Float    // Conversion rate to Indonesian Rupiah
+  isActive        Boolean  @default(true)
+
+  // Relations
+  game            Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@unique([gameId, currencyName])
+  @@index([gameId])
+}
+
+// Items (Profile Pictures only - gacha rewards)
+model Item {
+  id          Int      @id @default(autoincrement())
+  itemName    String
+  rarity      String   // "Common", "Rare", "Epic", "Legendary"
+  imageUrl    String?
+  isMilestone Boolean  @default(false) // True for achievement milestone rewards
+
+  // Relations
+  profilesWithPicture Profile[]     @relation("ProfilePicture")
+  inventory           ProfileItem[]
+  gachaPools          GachaPoolItem[]
+
+  @@index([rarity])
+}
+
+// Pivot Table: Profile Inventory
+model ProfileItem {
+  id          Int      @id @default(autoincrement())
+  profileId   Int
+  itemId      Int
+  acquiredAt  DateTime @default(now())
+
+  // Relations
+  profile     Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  item        Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, itemId])
+  @@index([profileId])
+}
+
+// Gacha Pool per Game
+model GachaPool {
+  id          Int      @id @default(autoincrement())
+  gameId      Int      @unique
+  name        String
+  costPerRoll Int      @default(100) // Points cost
+  isActive    Boolean  @default(true)
+
+  // Relations
+  game        Game            @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  items       GachaPoolItem[]
+  history     GachaHistory[]
+}
+
+// Pivot Table: Gacha Pool Items with Drop Rates
+model GachaPoolItem {
+  id          Int      @id @default(autoincrement())
+  gachaPoolId Int
+  itemId      Int
+  dropRate    Float    // Percentage (0-100)
+
+  // Relations
+  gachaPool   GachaPool @relation(fields: [gachaPoolId], references: [id], onDelete: Cascade)
+  item        Item      @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@unique([gachaPoolId, itemId])
+  @@index([gachaPoolId])
+}
+
+// Gacha History
+model GachaHistory {
+  id          Int      @id @default(autoincrement())
+  profileId   Int
+  gachaPoolId Int
+  itemId      Int?     // Item won (null if failed)
+  pointsSpent Int
+  rolledAt    DateTime @default(now())
+
+  // Relations
+  profile     Profile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  gachaPool   GachaPool @relation(fields: [gachaPoolId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+  @@index([rolledAt])
+}
+
+// Vouchers/Store Items
+model Voucher {
+  id          Int      @id @default(autoincrement())
+  gameId      Int
+  voucherName String
+  value       Float    // Voucher value in IDR
+  pointsCost  Int      // Points needed to purchase
+  stock       Int      @default(-1) // -1 for unlimited
+  imageUrl    String?
+  isActive    Boolean  @default(true)
+
+  // Relations
+  game        Game              @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  purchases   VoucherPurchase[]
+
+  @@index([gameId])
+  @@index([pointsCost])
+}
+
+// Voucher Purchase History
+model VoucherPurchase {
+  id          Int      @id @default(autoincrement())
+  profileId   Int
+  voucherId   Int
+  pointsSpent Int
+  voucherCode String?  // Generated voucher code
+  purchasedAt DateTime @default(now())
+  isUsed      Boolean  @default(false)
+
+  // Relations
+  profile     Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  voucher     Voucher  @relation(fields: [voucherId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+  @@index([voucherId])
 }

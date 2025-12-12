@@ -1,6 +1,7 @@
 {
   "include": ["src/**/*", "prisma/**/*"],
   "compilerOptions": {
+    "allowJs": true,
     "outDir": "./dist",
     "module": "commonjs",
     "target": "es2016",
