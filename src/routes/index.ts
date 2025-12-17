@@ -5,6 +5,7 @@ import { EventController } from "../controllers/eventController";
 import { ItemController } from "../controllers/itemController";
 import { TransactionController } from "../controllers/transactionController";
 import { VoucherController } from "../controllers/voucherController";
+import { apiRouter } from "./api";
 
 const router = Router();
 
@@ -48,5 +49,7 @@ router.get("/vouchers/by-game", VoucherController.getByGame);
 router.get("/vouchers/purchases/:profileId", VoucherController.getPurchaseHistory);
 router.get("/vouchers/:id", VoucherController.getById);
 router.post("/vouchers/purchases/:id/use", VoucherController.markAsUsed);
+
+router.use("/", apiRouter);
 
 export default router;

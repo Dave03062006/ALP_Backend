@@ -4,5 +4,5 @@ import { calculatePrice } from "../controllers/priceCalculatorController";
 
 export const apiRouter = express.Router();
 
-apiRouter.post('/calculator/convert', calculatePrice);
+apiRouter.post('/currency/convert', calculatePrice);
 apiRouter.get("/calculator/data", getCalculatorData);
