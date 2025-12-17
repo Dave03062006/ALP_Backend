@@ -43,6 +43,7 @@ router.get("/transactions/:profileId/statistics", TransactionController.getStati
 
 // Vouchers
 router.post("/vouchers", VoucherController.create);
+router.get("/vouchers", VoucherController.getAll);
 router.post("/vouchers/:profileId/purchase", VoucherController.purchase);
 router.get("/vouchers/by-game", VoucherController.getByGame);
 router.get("/vouchers/purchases/:profileId", VoucherController.getPurchaseHistory);

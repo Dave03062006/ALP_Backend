@@ -21,6 +21,16 @@ export const VoucherController = {
         }
     },
 
+    async getAll(req: Request, res: Response, next: NextFunction) {
+        try {
+            const activeOnly = req.query.activeOnly === 'true';
+            const vouchers = await VoucherService.getAll(activeOnly);
+            res.json(vouchers);
+        } catch (err) {
+            next(err);
+        }
+    },
+
     async getByGame(req: Request, res: Response, next: NextFunction) {
         try {
             const query = req.query as any;
