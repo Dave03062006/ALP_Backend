@@ -50,11 +50,12 @@ export const ProfileController = {
         }
     },
 
-    async getLeaderboard(req: Request, res: Response, next: NextFunction) {
+    async getGamesLeaderboard(req: Request, res: Response, next: NextFunction) {
         try {
+            const id = Number(req.params.id);
             const limit = req.query.limit ? Number(req.query.limit) : 10;
-            const list = await ProfileService.getLeaderboard(limit);
-            res.json(list);
+            const leaderboard = await ProfileService.getGamesLeaderboard(id, limit);
+            res.json(leaderboard);
         } catch (err) {
             next(err);
         }

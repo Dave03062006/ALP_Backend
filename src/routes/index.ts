@@ -11,7 +11,7 @@ const router = Router();
 // Profiles
 router.post("/profiles/register", ProfileController.register);
 router.post("/profiles/login", ProfileController.login);
-router.get("/profiles/leaderboard", ProfileController.getLeaderboard);
+router.get("/profiles/:id/games-leaderboard", ProfileController.getGamesLeaderboard);
 router.get("/profiles/:id", ProfileController.getProfile);
 router.put("/profiles/:id", ProfileController.updateProfile);
 router.get("/profiles/:id/inventory", ProfileController.getInventory);

@@ -5,6 +5,7 @@ import {
     LoginProfileRequest, 
     UpdateProfileRequest, 
     ProfileResponse, 
+    GameSpendingLeaderboard,
     toProfileResponse 
 } from "../models/profileModel";
 import { ProfileValidation } from "../validations/profile-validation";
@@ -149,14 +150,55 @@ export class ProfileService {
         return inventory;
     }
 
-    static async getLeaderboard(limit: number = 10): Promise<ProfileResponse[]> {
-        const profiles = await prismaClient.profile.findMany({
+    static async getGamesLeaderboard(profileId: number, limit: number = 10): Promise<GameSpendingLeaderboard[]> {
+        // Verify profile exists
+        const profile = await prismaClient.profile.findUnique({
+            where: { id: profileId }
+        });
+
+        if (!profile) {
+            throw new ResponseError(404, "Profile not found");
+        }
+
+        // Aggregate spending by game
+        const gameStats = await prismaClient.transaction.groupBy({
+            by: ['gameId'],
+            where: {
+                profileId: profileId
+            },
+            _sum: {
+                amount: true,
+                pointsEarned: true
+            },
+            _count: {
+                id: true
+            },
             orderBy: {
-                points: 'desc'
+                _sum: {
+                    amount: 'desc'
+                }
             },
             take: limit
         });
 
-        return profiles.map(toProfileResponse);
+        // Fetch game details for each game
+        const leaderboard: GameSpendingLeaderboard[] = await Promise.all(
+            gameStats.map(async (stat) => {
+                const game = await prismaClient.game.findUnique({
+                    where: { id: stat.gameId }
+                });
+
+                return {
+                    gameId: stat.gameId,
+                    gameName: game?.name || 'Unknown Game',
+                    gameIconUrl: game?.iconUrl || undefined,
+                    totalSpent: stat._sum.amount || 0,
+                    transactionCount: stat._count.id,
+                    pointsEarned: stat._sum.pointsEarned || 0
+                };
+            })
+        );
+
+        return leaderboard;
     }
 }
