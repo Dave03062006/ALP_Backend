@@ -15,7 +15,6 @@ app.use("/", mainRoutes);
 app.use(errorMiddleware);
 
 const port = PORT ? Number(PORT) : 3000;
-app.listen(port, () => {
-	// eslint-disable-next-line no-console
+app.listen(port, () => { 
 	console.log(`Server listening on port ${port}`);
 });
