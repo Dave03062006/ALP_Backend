@@ -1,20 +1,16 @@
 import express from "express";
-import bodyParser from "body-parser";
-import mainRoutes from "./routes";
+import gachaRoutes from "./routes/gachaRoutes";
 import { errorMiddleware } from "./middleware/error-middleware";
-import { PORT } from "./utils/env-util";
+import config from "./config";
 
 const app = express();
 
-app.use(bodyParser.json());
+app.use(express.json());
 
-app.get("/health", (_, res) => res.json({ status: "ok" }));
-
-app.use("/", mainRoutes);
+app.use("/api", gachaRoutes);
 
 app.use(errorMiddleware);
 
-const port = PORT ? Number(PORT) : 3000;
-app.listen(port, () => { 
-	console.log(`Server listening on port ${port}`);
+app.listen(config.PORT, () => {
+  console.log(`Server running on port ${config.PORT}`);
 });
