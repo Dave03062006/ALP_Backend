@@ -1,12 +1,10 @@
-import { PrismaClient } from "@prisma/client";
+import { prismaClient as prisma } from "../utils/database-util";
 import { 
     ConvertCurrencyRequest, 
     ConversionResult, 
     toConversionResult 
 } from "../models/currencyModel";
 import { ResponseError } from "../error/response-error";
-
-const prisma = new PrismaClient();
 
 export const calculateCurrency = async (request: ConvertCurrencyRequest): Promise<ConversionResult> => {
     

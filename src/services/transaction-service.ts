@@ -1,60 +1,80 @@
-import { prismaClient } from "../utils/database-util";
+import { prismaClient as prisma } from "../utils/database-util";
 import { ResponseError } from "../error/response-error";
-import { 
-    CreateTransactionRequest, 
-    GetTransactionHistoryQuery, 
-    TransactionResponse, 
-    toTransactionResponse 
-} from "../models/transactionModel";
-import { TransactionValidation } from "../validations/transaction-validation";
 
-export class TransactionService {
-    static async create(profileId: number, request: CreateTransactionRequest): Promise<TransactionResponse> {
-        const createRequest = TransactionValidation.CREATE.parse(request);
+export interface CreateTransactionRequest {
+    gameId: number;
+    eventId?: number;
+    transactionTypeId: number;
+    amount: number;
+}
 
-        // Verify game exists
-        const game = await prismaClient.game.findUnique({
-            where: { id: createRequest.gameId }
+export interface TransactionHistoryQuery {
+    gameId?: number;
+    startDate?: string;
+    endDate?: string;
+    limit?: number;
+    offset?: number;
+}
+
+export const TransactionService = {
+    async create(profileId: number, request: CreateTransactionRequest) {
+        // Validate profile exists
+        const profile = await prisma.profile.findUnique({
+            where: { id: profileId }
         });
 
-        if (!game || !game.isActive) {
-            throw new ResponseError(404, "Game not found or inactive");
+        if (!profile) {
+            throw new ResponseError(404, "Profile not found");
         }
 
-        // Verify transaction type exists
-        const transactionType = await prismaClient.transactionType.findUnique({
-            where: { id: createRequest.transactionTypeId }
+        // Validate game exists
+        const game = await prisma.game.findUnique({
+            where: { id: request.gameId }
+        });
+
+        if (!game) {
+            throw new ResponseError(404, "Game not found");
+        }
+
+        // Validate transaction type exists
+        const transactionType = await prisma.transactionType.findUnique({
+            where: { id: request.transactionTypeId }
         });
 
         if (!transactionType) {
             throw new ResponseError(404, "Transaction type not found");
         }
 
-        // Verify event exists if provided
-        if (createRequest.eventId) {
-            const event = await prismaClient.event.findUnique({
-                where: { id: createRequest.eventId }
+        // Validate event if provided
+        if (request.eventId) {
+            const event = await prisma.event.findUnique({
+                where: { id: request.eventId }
             });
 
-            if (!event || !event.isActive) {
-                throw new ResponseError(404, "Event not found or inactive");
+            if (!event) {
+                throw new ResponseError(404, "Event not found");
             }
         }
 
         // Calculate points earned
-        const pointsEarned = Math.floor(createRequest.amount * transactionType.pointsMultiplier);
+        const pointsEarned = Math.floor(request.amount * transactionType.pointsMultiplier);
 
         // Create transaction and update profile in a transaction
-        const transaction = await prismaClient.$transaction(async (tx) => {
-            // Create transaction record
+        const transaction = await prisma.$transaction(async (tx) => {
+            // Create the transaction
             const newTransaction = await tx.transaction.create({
                 data: {
                     profileId,
-                    gameId: createRequest.gameId,
-                    eventId: createRequest.eventId,
-                    transactionTypeId: createRequest.transactionTypeId,
-                    amount: createRequest.amount,
+                    gameId: request.gameId,
+                    eventId: request.eventId,
+                    transactionTypeId: request.transactionTypeId,
+                    amount: request.amount,
                     pointsEarned
+                },
+                include: {
+                    game: true,
+                    event: true,
+                    transactionType: true
                 }
             });
 
@@ -63,75 +83,89 @@ export class TransactionService {
                 where: { id: profileId },
                 data: {
                     points: { increment: pointsEarned },
-                    totalSpent: { increment: createRequest.amount }
+                    totalSpent: { increment: request.amount }
                 }
             });
 
             return newTransaction;
         });
 
-        return toTransactionResponse(transaction);
-    }
+        return transaction;
+    },
 
-    static async getHistory(
-        profileId: number, 
-        query: GetTransactionHistoryQuery
-    ): Promise<TransactionResponse[]> {
-        const validatedQuery = TransactionValidation.GET_HISTORY.parse(query);
+    async getHistory(profileId: number, query: TransactionHistoryQuery) {
+        // Validate profile exists
+        const profile = await prisma.profile.findUnique({
+            where: { id: profileId }
+        });
 
-        const whereClause: any = { profileId };
-
-        if (validatedQuery.gameId) {
-            whereClause.gameId = validatedQuery.gameId;
+        if (!profile) {
+            throw new ResponseError(404, "Profile not found");
         }
 
-        if (validatedQuery.startDate || validatedQuery.endDate) {
-            whereClause.purchaseDate = {};
-            if (validatedQuery.startDate) {
-                whereClause.purchaseDate.gte = new Date(validatedQuery.startDate);
+        const where: any = { profileId };
+
+        if (query.gameId) {
+            where.gameId = query.gameId;
+        }
+
+        if (query.startDate || query.endDate) {
+            where.purchaseDate = {};
+            if (query.startDate) {
+                where.purchaseDate.gte = new Date(query.startDate);
             }
-            if (validatedQuery.endDate) {
-                whereClause.purchaseDate.lte = new Date(validatedQuery.endDate);
+            if (query.endDate) {
+                where.purchaseDate.lte = new Date(query.endDate);
             }
         }
 
-        const transactions = await prismaClient.transaction.findMany({
-            where: whereClause,
-            orderBy: { purchaseDate: 'desc' },
-            take: validatedQuery.limit || 50,
-            skip: validatedQuery.offset || 0,
+        const transactions = await prisma.transaction.findMany({
+            where,
             include: {
                 game: true,
                 event: true,
                 transactionType: true
-            }
+            },
+            orderBy: { purchaseDate: 'desc' },
+            take: query.limit || 50,
+            skip: query.offset || 0
         });
 
-        return transactions.map(toTransactionResponse);
-    }
+        return transactions;
+    },
 
-    static async getStatistics(profileId: number, gameId?: number): Promise<any> {
-        const whereClause: any = { profileId };
-        if (gameId) {
-            whereClause.gameId = gameId;
+    async getStatistics(profileId: number, gameId?: number) {
+        // Validate profile exists
+        const profile = await prisma.profile.findUnique({
+            where: { id: profileId }
+        });
+
+        if (!profile) {
+            throw new ResponseError(404, "Profile not found");
         }
 
-        const [totalTransactions, totalAmount, totalPoints] = await Promise.all([
-            prismaClient.transaction.count({ where: whereClause }),
-            prismaClient.transaction.aggregate({
-                where: whereClause,
+        const where: any = { profileId };
+        if (gameId) {
+            where.gameId = gameId;
+        }
+
+        const [totalTransactions, totalSpent, totalPointsEarned] = await Promise.all([
+            prisma.transaction.count({ where }),
+            prisma.transaction.aggregate({
+                where,
                 _sum: { amount: true }
             }),
-            prismaClient.transaction.aggregate({
-                where: whereClause,
+            prisma.transaction.aggregate({
+                where,
                 _sum: { pointsEarned: true }
             })
         ]);
 
         return {
             totalTransactions,
-            totalAmount: totalAmount._sum.amount || 0,
-            totalPointsEarned: totalPoints._sum.pointsEarned || 0
+            totalSpent: totalSpent._sum.amount || 0,
+            totalPointsEarned: totalPointsEarned._sum.pointsEarned || 0,
+            currentPoints: profile.points
         };
     }
-}
+};
