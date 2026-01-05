@@ -1,8 +1,65 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../generated/prisma/client';
+import { PrismaPg } from "@prisma/adapter-pg";
+import { Pool } from "pg";
+import bcrypt from 'bcrypt';
+import dotenv from 'dotenv';
 
-const prisma = new PrismaClient();
+// Load environment variables
+dotenv.config();
+
+const connectionString = process.env.DATABASE_URL;
+
+if (!connectionString) {
+  throw new Error("DATABASE_URL is not defined in environment variables");
+}
+
+const pool = new Pool({ connectionString });
+const adapter = new PrismaPg(pool);
+
+const prisma = new PrismaClient({
+  adapter,
+});
 
 async function main() {
+  console.log('Start seeding...');
+
+  // Create a default test profile
+  console.log('Creating default profile...');
+  const hashedPassword = await bcrypt.hash('password123', 10);
+
+  const defaultProfile = await prisma.profile.upsert({
+    where: { username: 'testuser' },
+    update: {},
+    create: {
+      username: 'testuser',
+      email: 'test@example.com',
+      password: hashedPassword,
+      displayName: 'Test User',
+      points: 0,
+      totalSpent: 0,
+      achievementCount: 0
+    }
+  });
+
+  console.log(`✅ Default profile created: ${defaultProfile.username} (ID: ${defaultProfile.id})`);
+
+  // Create transaction types
+  console.log('Creating transaction types...');
+  const transactionTypes = [
+    { typeName: 'Single Purchase', pointsMultiplier: 1.0 },
+    { typeName: 'Bundle', pointsMultiplier: 1.5 },
+    { typeName: 'Discount', pointsMultiplier: 0.8 }
+  ];
+
+  for (const type of transactionTypes) {
+    const created = await prisma.transactionType.upsert({
+      where: { typeName: type.typeName },
+      update: { pointsMultiplier: type.pointsMultiplier },
+      create: type
+    });
+    console.log(`✅ Transaction type: ${created.typeName}`);
+  }
+
   console.log('Start seeding games and currency rates...');
  
   const gamesData = [

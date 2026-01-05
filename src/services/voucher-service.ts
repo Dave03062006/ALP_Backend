@@ -101,6 +101,16 @@ export class VoucherService {
         return `VC-${uuidv4().substring(0, 8).toUpperCase()}`;
     }
 
+    static async getAll(activeOnly: boolean = false): Promise<VoucherResponse[]> {
+        const vouchers = await prismaClient.voucher.findMany({
+            where: activeOnly ? { isActive: true } : undefined,
+            include: { game: true },
+            orderBy: { pointsCost: 'asc' }
+        });
+
+        return vouchers.map(toVoucherResponse);
+    }
+
     static async getByGame(query: GetVouchersByGameQuery): Promise<VoucherResponse[]> {
         const validatedQuery = VoucherValidation.GET_BY_GAME.parse(query);
 

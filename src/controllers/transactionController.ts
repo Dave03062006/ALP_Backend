@@ -15,7 +15,17 @@ export const TransactionController = {
     async getHistory(req: Request, res: Response, next: NextFunction) {
         try {
             const profileId = Number(req.params.profileId);
-            const result = await TransactionService.getHistory(profileId, req.query as any);
+
+            // Convert query parameters to proper types
+            const query = {
+                gameId: req.query.gameId ? Number(req.query.gameId) : undefined,
+                startDate: req.query.startDate as string | undefined,
+                endDate: req.query.endDate as string | undefined,
+                limit: req.query.limit ? Number(req.query.limit) : undefined,
+                offset: req.query.offset ? Number(req.query.offset) : undefined
+            };
+
+            const result = await TransactionService.getHistory(profileId, query);
             res.json(result);
         } catch (err) {
             next(err);

@@ -1,5 +1,5 @@
 {
-  "include": ["src/**/*", "prisma/**/*"],
+  "include": ["src/**/*", "prisma/**/*", "generated/**/*"],
   "compilerOptions": {
     "allowJs": true,
     "outDir": "./dist",
