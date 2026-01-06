@@ -19,6 +19,15 @@ export interface UpdateProfileRequest{
 
 export interface ProfileResponse extends Omit<Profile, 'password'>{}
 
+export interface GameSpendingLeaderboard {
+    gameId: number;
+    gameName: string;
+    gameIconUrl?: string;
+    totalSpent: number;
+    transactionCount: number;
+    pointsEarned: number;
+}
+
 export const toProfileResponse = (profile: Profile): ProfileResponse => {
     const { password, ...rest } = profile;
     return rest;

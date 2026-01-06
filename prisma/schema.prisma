@@ -11,7 +11,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 model Profile {
@@ -91,6 +90,7 @@ model Event {
   game         Game          @relation(fields: [gameId], references: [id], onDelete: Cascade)
   transactions Transaction[]
 
+  @@unique([gameId, eventName])
   @@index([gameId])
   @@index([eventName])
 }
