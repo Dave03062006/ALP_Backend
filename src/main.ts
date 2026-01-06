@@ -6,6 +6,7 @@ import gameRoutes from "./routes/gameRoutes";
 import voucherRoutes from "./routes/voucherRoutes";
 import eventRoutes from "./routes/eventRoutes";
 import itemRoutes from "./routes/itemRoutes";
+import authRoutes from "./routes/auth-routes";
 import { errorMiddleware } from "./middleware/error-middleware";
 import config from "./config";
 
@@ -25,6 +26,7 @@ app.use((req, res, next) => {
 app.use(express.json());
 
 // Register all routes
+app.use("/api/auth", authRoutes);
 app.use("/api", profileRoutes);
 app.use("/api", transactionRoutes);
 app.use("/api", gameRoutes);
