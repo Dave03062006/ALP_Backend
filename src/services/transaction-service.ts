@@ -52,7 +52,12 @@ export const TransactionService = {
             });
 
             if (!event) {
-                throw new ResponseError(404, "Event not found");
+                throw new ResponseError(404, `Event with ID ${request.eventId} not found`);
+            }
+
+            // Validate that event belongs to the selected game
+            if (event.gameId !== request.gameId) {
+                throw new ResponseError(400, "Event does not belong to the selected game");
             }
         }
 

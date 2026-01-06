@@ -33,8 +33,8 @@ export const VoucherController = {
 
     async getByGame(req: Request, res: Response, next: NextFunction) {
         try {
-            const query = req.query as any;
-            const vouchers = await VoucherService.getByGame(query);
+            const gameId = Number(req.query.gameId);
+            const vouchers = await VoucherService.getByGame({ gameId });
             res.json(vouchers);
         } catch (err) {
             next(err);

@@ -147,6 +147,65 @@ async function main() {
     console.log(`   💰 Rate set: 1 ${createdRate.currencyName} = Rp ${createdRate.toIDR}`);
   }
 
+  // Create events for games
+  console.log('Creating events...');
+
+  // Get all games to create events for them
+  const allGames = await prisma.game.findMany();
+
+  const eventNames = ['Battle Pass', 'Special Event', 'Season Sale'];
+
+  for (const game of allGames) {
+    for (const eventName of eventNames) {
+      const createdEvent = await prisma.event.upsert({
+        where: {
+          gameId_eventName: {
+            gameId: game.id,
+            eventName: eventName
+          }
+        },
+        update: { isActive: true },
+        create: {
+          gameId: game.id,
+          eventName: eventName,
+          isActive: true
+        }
+      });
+      console.log(`✅ Event created: ${createdEvent.eventName} for ${game.name} (ID: ${createdEvent.gameId})`);
+    }
+  }
+
+  // Create vouchers for games
+  console.log('Creating vouchers...');
+
+  // Clear existing vouchers to avoid duplicates when re-seeding
+  await prisma.voucher.deleteMany({});
+  console.log('✅ Cleared existing vouchers');
+
+  const voucherTemplates = [
+    { name: '10% Discount Voucher', value: 10.0, pointsCost: 100, stock: 50 },
+    { name: '20% Discount Voucher', value: 20.0, pointsCost: 200, stock: 30 },
+    { name: '$5 Off Voucher', value: 5.0, pointsCost: 150, stock: -1 }, // Unlimited
+    { name: '$10 Off Voucher', value: 10.0, pointsCost: 300, stock: 20 },
+    { name: 'Premium Bundle Discount', value: 25.0, pointsCost: 500, stock: 10 }
+  ];
+
+  for (const game of allGames) {
+    for (const template of voucherTemplates) {
+      const createdVoucher = await prisma.voucher.create({
+        data: {
+          gameId: game.id,
+          voucherName: template.name,
+          value: template.value,
+          pointsCost: template.pointsCost,
+          stock: template.stock,
+          isActive: true
+        }
+      });
+      console.log(`✅ Voucher created: ${createdVoucher.voucherName} for ${game.name} (${createdVoucher.pointsCost} points)`);
+    }
+  }
+
   console.log('Seeding finished.');
 }
 

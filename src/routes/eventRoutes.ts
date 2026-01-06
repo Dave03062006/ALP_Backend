@@ -9,8 +9,8 @@ router.post("/events", EventController.create);
 // GET /events/:id
 router.get("/events/:id", EventController.getById);
 
-// GET /events/game/:gameId
-router.get("/events/game/:gameId", EventController.getByGame);
+// GET /events/by-game/:gameId - Fixed to match frontend
+router.get("/events/by-game/:gameId", EventController.getByGame);
 
 // PUT /events/:id
 router.put("/events/:id", EventController.update);
@@ -19,4 +19,3 @@ router.put("/events/:id", EventController.update);
 router.delete("/events/:id", EventController.delete);
 
 export default router;
-

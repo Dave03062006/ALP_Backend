@@ -9,8 +9,8 @@ router.post("/vouchers", VoucherController.create);
 // GET /vouchers
 router.get("/vouchers", VoucherController.getAll);
 
-// GET /vouchers/game
-router.get("/vouchers/game", VoucherController.getByGame);
+// GET /vouchers/by-game - Fixed to match frontend
+router.get("/vouchers/by-game", VoucherController.getByGame);
 
 // GET /vouchers/:id
 router.get("/vouchers/:id", VoucherController.getById);
@@ -25,4 +25,3 @@ router.get("/profiles/:profileId/vouchers/purchases", VoucherController.getPurch
 router.put("/vouchers/:id/use", VoucherController.markAsUsed);
 
 export default router;
-
