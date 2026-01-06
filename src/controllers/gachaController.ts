@@ -4,7 +4,7 @@ import gachaService from "../services/gachaService";
 import { ok, fail } from "../utils/response-util";
 
 export async function gachaHandler(req: Request, res: Response, next: NextFunction) {
-    try {
+    try {   
         const profileId = Number(req.params.profileId || req.body.profileId);
         const gameId = Number(req.params.gameId || req.body.gameId);
         const rolls = Number(req.body.rolls ?? 1);
@@ -15,7 +15,7 @@ export async function gachaHandler(req: Request, res: Response, next: NextFuncti
         if (!result.success) return res.status(400).json(fail(result.message));
 
         return res.json(
-            ok({ results: result.data, rolls, })
+            ok({ results: result.data, rolls,remainingPoints: result.remainingPoints })
         );
 
     } catch (err) {
