@@ -6,6 +6,7 @@ import gameRoutes from "./routes/gameRoutes";
 import voucherRoutes from "./routes/voucherRoutes";
 import eventRoutes from "./routes/eventRoutes";
 import itemRoutes from "./routes/itemRoutes";
+import { apiRouter } from "./routes/api";
 import { errorMiddleware } from "./middleware/error-middleware";
 import config from "./config";
 
@@ -22,7 +23,7 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.json());
+app.use(express. json());
 
 // Register all routes
 app.use("/api", profileRoutes);
@@ -32,10 +33,11 @@ app.use("/api", voucherRoutes);
 app.use("/api", eventRoutes);
 app.use("/api", itemRoutes);
 app.use("/api", gachaRoutes);
+app.use("/api", apiRouter);
 
 app.use(errorMiddleware);
 
-app.listen(config.PORT, () => {
+app.listen(config. PORT, () => {
   console.log(`Server running on http://localhost:${config.PORT}`);
   console.log(`API endpoints available at http://localhost:${config.PORT}/api`);
 });
